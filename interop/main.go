@@ -111,7 +111,18 @@ type gateway struct {
 	members map[string]member
 	rng     *mrand.Rand
 
+	// pendingEvict lists members that rejected a commit. They are stuck in
+	// an earlier epoch and take no part in later rounds until removed.
 	pendingEvict []string
+}
+
+func (g *gateway) isPendingEvict(uid string) bool {
+	for _, u := range g.pendingEvict {
+		if u == uid {
+			return true
+		}
+	}
+	return false
 }
 
 var knownLibdaveRejections int
@@ -209,6 +220,9 @@ func (g *gateway) commitRound(body []byte) ([]byte, member) {
 	}
 	var outs []out
 	for _, u := range uids {
+		if g.isPendingEvict(u) {
+			continue
+		}
 		m := g.members[u]
 		cw := m.ProcessProposals(body)
 		if cw == nil {
@@ -267,10 +281,10 @@ func (g *gateway) remove(uid string) {
 func (g *gateway) evict() {
 	for len(g.pendingEvict) > 0 {
 		uid := g.pendingEvict[0]
-		g.pendingEvict = g.pendingEvict[1:]
 		if _, ok := g.members[uid]; ok {
 			g.remove(uid)
 		}
+		g.pendingEvict = g.pendingEvict[1:]
 	}
 }
 

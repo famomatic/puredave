@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/binary"
+	"encoding/hex"
 	"testing"
 	"time"
 )
@@ -261,5 +262,30 @@ func TestDisplayableCode(t *testing.T) {
 	}
 	if _, err := GenerateDisplayableCode(data, 11, 5); err == nil {
 		t.Fatal("expected length error")
+	}
+}
+
+// Expected values from libdave's js/__tests__/DisplayableCode-test.ts.
+func TestDisplayableCodeLibdave(t *testing.T) {
+	short := []byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee}
+	if code, err := GenerateDisplayableCode(short, 5, 5); err != nil || code != "05870" {
+		t.Fatalf("short: %q, %v", code, err)
+	}
+	long, _ := hex.DecodeString("aabbccddeebbccddeeffccddeeffaaddeeffaabbeeffaabbccffaabbccdd")
+	if code, err := GenerateDisplayableCode(long, 30, 5); err != nil || code != "058708105556138052119572494877" {
+		t.Fatalf("long: %q, %v", code, err)
+	}
+	// libdave accepts groups of up to 8 bytes.
+	if code, err := GenerateDisplayableCode(long[:8], 8, 8); err != nil || code != "57765597" {
+		t.Fatalf("group size 8: %q, %v", code, err)
+	}
+	if _, err := GenerateDisplayableCode(short[:4], 5, 5); err == nil {
+		t.Fatal("expected error for short data")
+	}
+	if _, err := GenerateDisplayableCode(short[:4], 4, 3); err == nil {
+		t.Fatal("expected error for length not a multiple of the group size")
+	}
+	if _, err := GenerateDisplayableCode(make([]byte, 1024), 1023, 9); err == nil {
+		t.Fatal("expected error for group size 9")
 	}
 }

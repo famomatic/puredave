@@ -6,12 +6,19 @@ import (
 	"strings"
 )
 
+// maxDisplayableGroupSize matches libdave's MAX_GROUP_SIZE: a group of 8
+// bytes still fits a uint64.
+const maxDisplayableGroupSize = 8
+
 // GenerateDisplayableCode renders data as groups of decimal digits, as used
 // for epoch authenticators (30 digits in groups of 5) and pairwise
 // fingerprints (45 digits in groups of 5).
 func GenerateDisplayableCode(data []byte, desiredLength, groupSize int) (string, error) {
-	if groupSize <= 0 || groupSize >= 8 {
-		return "", errors.New("dave: group size must be in [1, 7]")
+	if groupSize <= 0 || groupSize > maxDisplayableGroupSize {
+		return "", fmt.Errorf("dave: group size must be in [1, %d]", maxDisplayableGroupSize)
+	}
+	if desiredLength < 0 {
+		return "", errors.New("dave: desired length must not be negative")
 	}
 	if len(data) < desiredLength {
 		return "", errors.New("dave: data is too short for the desired code length")
