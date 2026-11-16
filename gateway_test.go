@@ -44,12 +44,18 @@ func TestGatewaySessionFlow(t *testing.T) {
 	}
 	a.AddUser(ids[1])
 	b.AddUser(ids[0])
+	if a.Ready() {
+		t.Fatal("ready before DAVE was negotiated")
+	}
 
 	// select_protocol_ack (4) with DAVE enabled: both send key packages.
 	a.OnSelectProtocolAck(1)
 	b.OnSelectProtocolAck(1)
 	if len(cbA.keyPackages) != 1 || len(cbB.keyPackages) != 1 {
 		t.Fatal("key packages not sent")
+	}
+	if a.Ready() || b.Ready() {
+		t.Fatal("ready before joining a group")
 	}
 	// Before the group exists, frames pass through.
 	out := make([]byte, 64)
@@ -79,8 +85,14 @@ func TestGatewaySessionFlow(t *testing.T) {
 	if !bytes.Equal(a.EpochAuthenticator(), b.EpochAuthenticator()) {
 		t.Fatal("epoch authenticators differ")
 	}
+	if b.Ready() {
+		t.Fatal("ready before the transition executed")
+	}
 	a.OnExecuteTransition(tid)
 	b.OnExecuteTransition(tid)
+	if !a.Ready() || !b.Ready() {
+		t.Fatal("not ready after the transition executed")
+	}
 
 	frame := []byte("encrypted opus frame")
 	ct := make([]byte, a.MaxEncryptedFrameSize(MediaTypeAudio, len(frame)))
@@ -103,7 +115,21 @@ func TestGatewaySessionFlow(t *testing.T) {
 	if n, err := a.Encrypt(MediaTypeAudio, 1, frame, ct); err != nil || !bytes.Equal(ct[:n], frame) {
 		t.Fatal("downgrade did not enable passthrough")
 	}
+	if !a.Ready() {
+		t.Fatal("not ready with DAVE disabled")
+	}
 	if len(cbA.invalid)+len(cbB.invalid) != 0 {
 		t.Fatal("unexpected invalid commit/welcome")
+	}
+}
+
+func TestGatewaySessionReadyWhenDisabled(t *testing.T) {
+	s := NewGatewaySession(userIDs(1)[0], &recordingCallbacks{})
+	if s.Ready() {
+		t.Fatal("ready before select_protocol_ack")
+	}
+	s.OnSelectProtocolAck(DisabledVersion)
+	if !s.Ready() {
+		t.Fatal("not ready with DAVE disabled")
 	}
 }

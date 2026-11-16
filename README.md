@@ -81,7 +81,8 @@ s.AssignSsrcToCodec(ssrc, dave.CodecOpus)
 // 29 announce_commit_transition (binary): s.OnAnnounceCommitTransition(transitionID, payload)
 // 30 welcome (binary):                    s.OnWelcome(transitionID, payload)
 
-// Sending audio:
+// Sending audio (hold frames while s.Ready() is false, i.e. during the
+// MLS handshake, instead of sending them unencrypted):
 buf := make([]byte, s.MaxEncryptedFrameSize(dave.MediaTypeAudio, len(opus)))
 n, err := s.Encrypt(dave.MediaTypeAudio, ssrc, opus, buf)
 

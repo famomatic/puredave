@@ -3,6 +3,7 @@ package dave
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 
 	"github.com/famomatic/puredave/mls"
 )
@@ -41,6 +42,10 @@ type GatewaySession struct {
 	lastVersion ProtocolVersion
 
 	onError func(op string, err error)
+
+	// disabled reports whether the protocol version in effect for the local
+	// encryptor is DisabledVersion, so E2EE is never established.
+	disabled atomic.Bool
 }
 
 // GatewaySessionOption configures a GatewaySession.
@@ -86,6 +91,20 @@ func (g *GatewaySession) report(op string, err error) {
 	if err != nil && g.onError != nil {
 		g.onError(op, err)
 	}
+}
+
+// Ready reports whether outgoing frames can be sent: true once the local
+// encryptor has a key ratchet for an established epoch, or when DAVE is
+// disabled for the connection. It is false while DAVE is being negotiated
+// or a group is being joined (for example right after joining or moving
+// voice channels); senders should hold frames until then instead of
+// sending them unencrypted. Encrypt itself still passes frames through
+// during that window.
+func (g *GatewaySession) Ready() bool {
+	if g.disabled.Load() {
+		return true
+	}
+	return !g.encryptor.IsPassthroughMode() && g.encryptor.HasKeyRatchet()
 }
 
 // Session returns the underlying MLS session.
@@ -301,6 +320,7 @@ func (g *GatewaySession) prepareTransition(transitionID uint16, version Protocol
 func (g *GatewaySession) setupKeyRatchetForUser(userID string, version ProtocolVersion) {
 	disabled := version == DisabledVersion
 	if userID == g.selfUserID {
+		g.disabled.Store(disabled)
 		g.encryptor.SetPassthroughMode(disabled)
 		if !disabled {
 			g.encryptor.SetKeyRatchet(g.session.KeyRatchet(userID))
