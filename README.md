@@ -93,20 +93,6 @@ n, err = s.Decrypt(userID, dave.MediaTypeAudio, frame, out)
 Binary payloads are the opcode body after the sequence number and opcode
 byte (and after the transition ID for 29 and 30), as in libdave.
 
-### With disgo / godave
-
-[`puregodave`](puregodave) implements
-[godave](https://github.com/disgoorg/godave)'s `Session` interface (v0.3.0)
-and replaces golibdave without cgo or libdave:
-
-```go
-import "github.com/famomatic/puredave/puregodave"
-
-voice.WithDaveSessionCreateFunc(puregodave.NewSession)
-```
-
-It is a separate module so the core package stays dependency-free.
-
 ### Lower-level API
 
 The building blocks mirror libdave one to one:
@@ -137,7 +123,6 @@ The `mls` package is usable on its own as a small RFC 9420 implementation
 | `github.com/famomatic/puredave` | DAVE: `Session`, `Encryptor`, `Decryptor`, key ratchets, codecs, fingerprints, `GatewaySession` |
 | `github.com/famomatic/puredave/mls` | MLS for ciphersuite 2: TLS codec, HPKE, ratchet tree, TreeKEM, key schedule, messages, group state |
 | `internal/tls`, `internal/scrypt` | TLS presentation language codec; RFC 7914 scrypt |
-| `puregodave/` | Separate module: `godave.Session` adapter (drop-in for golibdave) |
 | `interop/` | Separate module (cgo) that cross-checks against libdave |
 
 ## Differences from libdave
