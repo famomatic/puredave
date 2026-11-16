@@ -1,2 +1,4 @@
 github.com/disgoorg/godave v0.3.0 h1:37F3ZuiMd8/EXeoCtTeE8iP2eT2nWsfEa4/ITwoKfe4=
 github.com/disgoorg/godave v0.3.0/go.mod h1:OreAC3hpabr39bMVA+jwOVDq1EUPXH5A0XUBiZaDI1Y=
+github.com/famomatic/puredave v0.1.0 h1:oKHpMn/uYHoM05T2VyNPelGBL70gfERNzYFtPnnEKNM=
+github.com/famomatic/puredave v0.1.0/go.mod h1:6CTzLpKCi2dYejJGcmOhw/oSGxzEq7t6XW/z+WKGyBQ=
